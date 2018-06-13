@@ -194,6 +194,11 @@ class Configurable extends \Magento\Catalog\Model\Product\Type\AbstractType
     private $salableProcessor;
 
     /**
+     * @var \Magento\Msrp\Helper\Data
+     */
+    protected $msrpData;
+
+    /**
      * @codingStandardsIgnoreStart/End
      *
      * @param \Magento\Catalog\Model\Product\Option $catalogProductOption
@@ -213,6 +218,7 @@ class Configurable extends \Magento\Catalog\Model\Product\Type\AbstractType
      * @param \Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable $catalogProductTypeConfigurable
      * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
      * @param \Magento\Framework\Api\ExtensionAttribute\JoinProcessorInterface $extensionAttributesJoinProcessor
+     * @param \Magento\Msrp\Helper\Data $msrpData
      * @param \Magento\Framework\Serialize\Serializer\Json $serializer
      * @param ProductInterfaceFactory $productFactory
      * @param SalableProcessor $salableProcessor
@@ -238,6 +244,7 @@ class Configurable extends \Magento\Catalog\Model\Product\Type\AbstractType
         \Magento\Framework\Api\ExtensionAttribute\JoinProcessorInterface $extensionAttributesJoinProcessor,
         \Magento\Framework\Cache\FrontendInterface $cache = null,
         \Magento\Customer\Model\Session $customerSession = null,
+        \Magento\Msrp\Helper\Data $msrpData,
         \Magento\Framework\Serialize\Serializer\Json $serializer = null,
         ProductInterfaceFactory $productFactory = null,
         SalableProcessor $salableProcessor = null
@@ -255,6 +262,7 @@ class Configurable extends \Magento\Catalog\Model\Product\Type\AbstractType
         $this->productFactory = $productFactory ?: ObjectManager::getInstance()
             ->get(ProductInterfaceFactory::class);
         $this->salableProcessor = $salableProcessor ?: ObjectManager::getInstance()->get(SalableProcessor::class);
+        $this->msrpData = $msrpData;
         parent::__construct(
             $catalogProductOption,
             $eavConfig,
@@ -1195,6 +1203,21 @@ class Configurable extends \Magento\Catalog\Model\Product\Type\AbstractType
             $this->metadataPool = ObjectManager::getInstance()->get(MetadataPool::class);
         }
         return $this->metadataPool;
+    }
+
+    /**
+     * @param \Magento\Catalog\Model\Product $product
+     * @return int
+     */
+    public function getChildrenMsrp(\Magento\Catalog\Model\Product $product)
+    {
+        $prices = [];
+        foreach ($this->getUsedProducts($product) as $item) {
+            if ($item->getMsrp() !== null) {
+                $prices[] = $item->getMsrp();
+            }
+        }
+        return $prices ? min($prices) : 0;
     }
 
     /**
